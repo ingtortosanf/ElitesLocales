@@ -53,7 +53,7 @@ async function getRelated(table, foreignKey, id, select='*') {
   if (error) { console.warn(error); return []; }
   return data || [];
 }
-function fichaHtml(text) { return String(text || '').split(/\n{2,}/).map(t => `<p>${esc(t).replace(/\n/g,'<br>')}</p>`).join(''); }
+function fichaHtml(text) { return String(text || '').split(/\n{2,}/).map(t => `<p>${esc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\[(\d+)\]/g,'<sup>[$1]</sup>').replace(/\n/g,'<br>')}</p>`).join(''); }
 async function renderDetail(feature, type) {
   const p = feature.properties || {};
   const id = featureId(p);
