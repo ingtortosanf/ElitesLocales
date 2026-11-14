@@ -1,16 +1,12 @@
 import { CONFIG } from './config.js';
+import { FICHAS } from './fichas.js';
 
 const $ = (id) => document.getElementById(id);
 const hasSupabase = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && window.supabase);
 const db = hasSupabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey) : null;
 const map = L.map('map', { zoomControl: false, scrollWheelZoom: true }).setView([-21.5, -65.2], 5);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
-const baseLayers = {
-  paper: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19 }),
-  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 })
-};
-baseLayers.paper.addTo(map);
-let historicLayer = null;
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community', maxZoom: 19 }).addTo(map);
 let territoryLayer = null;
 let powerLayer = null;
 let selectedLayer = null;
@@ -57,15 +53,17 @@ async function getRelated(table, foreignKey, id, select='*') {
   if (error) { console.warn(error); return []; }
   return data || [];
 }
+function fichaHtml(text) { return String(text || '').split(/\n{2,}/).map(t => `<p>${esc(t).replace(/\n/g,'<br>')}</p>`).join(''); }
 async function renderDetail(feature, type) {
   const p = feature.properties || {};
   const id = featureId(p);
+  const local = FICHAS[id];
   $('detail-type').textContent = type === 'territorio' ? 'FICHA · TERRITORIO' : 'FICHA · ESPACIO DE PODER';
-  $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(featureName(p))}</h3><div class="detail-period">Espacio histórico de Charcas · Siglo XVII</div><p class="empty-state">${db ? 'Consultando ficha documental…' : 'La geometría está disponible. La ficha documental se completará cuando se configure la base de datos.'}</p>`;
+  $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(local?.name || featureName(p))}</h3><div class="detail-period">${esc(local?.period || 'Espacio histórico de Charcas · Siglo XVII')}</div><p class="empty-state">${db ? 'Consultando ficha documental…' : 'La geometría está disponible. La ficha documental se completará cuando se configure la base de datos.'}</p>`;
   openDetail();
   const entity = await getEntityDetail(id, type);
   if (!entity) {
-    $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(featureName(p))}</h3><div class="detail-period">Espacio histórico de Charcas · Siglo XVII</div><h4>Descripción histórica</h4><p>${db ? 'Todavía no se ha publicado una ficha documental para esta entidad.' : 'Esta entidad procede de la capa geográfica. Para mostrar descripciones, personajes, acontecimientos y fuentes, conectá el proyecto con Supabase y cargá su ficha desde Administración.'}</p><h4>Identificación cartográfica</h4><p>Identificador: ${esc(id)}<br>Tipo: ${type === 'territorio' ? 'Territorio' : 'Espacio de poder'}${p.Titulo ? `<br>Categoría: ${esc(p.Titulo)}` : ''}</p>`;
+    $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(local?.name || featureName(p))}</h3><div class="detail-period">${esc(local?.period || 'Espacio histórico de Charcas · Siglo XVII')}</div><h4>Descripción histórica</h4>${local ? `<div class="ficha-body">${fichaHtml(local.description)}</div>` : `<p>${db ? 'Todavía no se ha publicado una ficha documental para esta entidad.' : 'Esta entidad procede de la capa geográfica. Para mostrar descripciones, personajes, acontecimientos y fuentes, conectá el proyecto con Supabase y cargá su ficha desde Administración.'}</p>`}<h4>Identificación cartográfica</h4><p>Identificador: ${esc(id)}<br>Tipo: ${type === 'territorio' ? 'Territorio' : 'Espacio de poder'}${p.Titulo ? `<br>Categoría: ${esc(p.Titulo)}` : ''}</p>`;
     return;
   }
   const [people, events, sources, relations] = await Promise.all([
@@ -75,7 +73,7 @@ async function renderDetail(feature, type) {
     getRelated('entity_relations','source_geo_id',id,'relation_type,description,target_geo_id')
   ]);
   const list = (items, render) => items.length ? `<ul class="detail-list">${items.map(render).join('')}</ul>` : '<p class="muted">Sin registros asociados publicados.</p>';
-  $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(entity.name || featureName(p))}</h3><div class="detail-period">${esc(entity.period || 'Siglo XVII')}</div><h4>Descripción histórica</h4><p>${esc(entity.description || 'Sin descripción incorporada.')}</p><h4>Personas vinculadas</h4>${list(people,x=>`<li><strong>${esc(x.people?.full_name || 'Persona')}</strong>${x.people?.biography?`<br>${esc(x.people.biography)}`:''}${x.people?.person_offices?.length?`<br><em>Trayectoria:</em> ${x.people.person_offices.map(po=>esc(po.offices?.name||'Cargo')+(po.institution_context?' · '+esc(po.institution_context):'')+(po.start_date?' ('+esc(po.start_date):'')+(po.end_date?'–'+esc(po.end_date)+')':po.start_date?')':'')).join('; ')}`:''}</li>`)}<h4>Acontecimientos</h4>${list(events,x=>`<li><strong>${esc(x.events?.title || 'Acontecimiento')}</strong>${x.events?.event_date?` · ${esc(x.events.event_date)}`:''}${x.events?.description?`<br>${esc(x.events.description)}`:''}</li>`)}<h4>Fuentes documentales</h4>${list(sources,x=>`<li>${x.sources?.url?`<a href="${esc(x.sources.url)}" target="_blank" rel="noopener">${esc(x.sources.citation || 'Consultar fuente')}</a>`:esc(x.sources?.citation || 'Fuente')}</li>`)}<h4>Relaciones documentadas</h4>${list(relations,x=>`<li><strong>${esc(x.relation_type)}</strong>${x.target_geo_id?` · ${esc(x.target_geo_id)}`:''}${x.description?`<br>${esc(x.description)}`:''}</li>`)}`;
+  $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(entity.name || local?.name || featureName(p))}</h3><div class="detail-period">${esc(entity.period || local?.period || 'Siglo XVII')}</div><h4>Descripción histórica</h4><div class="ficha-body">${fichaHtml(entity.description || local?.description || 'Sin descripción incorporada.')}</div><h4>Personas vinculadas</h4>${list(people,x=>`<li><strong>${esc(x.people?.full_name || 'Persona')}</strong>${x.people?.biography?`<br>${esc(x.people.biography)}`:''}${x.people?.person_offices?.length?`<br><em>Trayectoria:</em> ${x.people.person_offices.map(po=>esc(po.offices?.name||'Cargo')+(po.institution_context?' · '+esc(po.institution_context):'')+(po.start_date?' ('+esc(po.start_date):'')+(po.end_date?'–'+esc(po.end_date)+')':po.start_date?')':'')).join('; ')}`:''}</li>`)}<h4>Acontecimientos</h4>${list(events,x=>`<li><strong>${esc(x.events?.title || 'Acontecimiento')}</strong>${x.events?.event_date?` · ${esc(x.events.event_date)}`:''}${x.events?.description?`<br>${esc(x.events.description)}`:''}</li>`)}<h4>Fuentes documentales</h4>${list(sources,x=>`<li>${x.sources?.url?`<a href="${esc(x.sources.url)}" target="_blank" rel="noopener">${esc(x.sources.citation || 'Consultar fuente')}</a>`:esc(x.sources?.citation || 'Fuente')}</li>`)}<h4>Relaciones documentadas</h4>${list(relations,x=>`<li><strong>${esc(x.relation_type)}</strong>${x.target_geo_id?` · ${esc(x.target_geo_id)}`:''}${x.description?`<br>${esc(x.description)}`:''}</li>`)}`;
 }
 
 async function loadGeoJSON(path, type) {
@@ -103,13 +101,6 @@ async function initMap() {
 $('territory-toggle').addEventListener('change',refreshLayers); $('power-toggle').addEventListener('change',refreshLayers);
 $('territory-opacity').addEventListener('input',e=>{ $('territory-value').value=`${e.target.value}%`; setLayerOpacity(territoryLayer,'territorio'); });
 $('power-opacity').addEventListener('input',e=>{ $('power-value').value=`${e.target.value}%`; setLayerOpacity(powerLayer,'poder'); });
-$('basemap-select').addEventListener('change',e=>{
-  Object.values(baseLayers).forEach(l=>map.removeLayer(l)); if(historicLayer) map.removeLayer(historicLayer);
-  if(e.target.value==='historic') {
-    if(CONFIG.historicalTilesUrl) { historicLayer=L.tileLayer(CONFIG.historicalTilesUrl,{attribution:CONFIG.historicalAttribution,maxZoom:19}).addTo(map); $('historic-note').classList.add('hidden'); }
-    else { baseLayers.paper.addTo(map); $('historic-note').classList.remove('hidden'); }
-  } else { baseLayers[e.target.value].addTo(map); $('historic-note').classList.add('hidden'); }
-});
 $('reset-map').addEventListener('click',()=>map.setView([-21.5,-65.2],5));
 $('detail-close').addEventListener('click',closeDetail);
 $('map').addEventListener('click',e=>{const b=e.target.closest('.popup-open'); if(!b)return; const f=featureIndex.get(b.dataset.featureId); if(f) renderDetail(f,b.dataset.featureType);});
