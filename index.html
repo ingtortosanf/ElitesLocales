@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Atlas histórico interactivo sobre territorios, espacios de poder y trayectorias políticas en el espacio de Charcas durante el siglo XVII.">
+  <meta name="theme-color" content="#f3eadb">
+  <title>Élites locales y trayectorias políticas</title>
+  <link rel="preconnect" href="https://unpkg.com"><link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#inicio" aria-label="Inicio">
+    <span class="brand-mark">EL</span><span><strong>Élites locales</strong><small>y trayectorias políticas</small></span>
+  </a>
+  <nav class="main-nav" id="main-nav" aria-label="Navegación principal">
+    <a href="#quien-soy">Quién soy</a><a href="#mapa">Explorar el mapa</a><a href="#fuentes">Fuentes</a><a href="#agradecimientos">Agradecimientos</a><a href="#contacto">Contactos</a>
+  </nav>
+  <button id="admin-open" class="admin-link" type="button">Administración <span aria-hidden="true">↗</span></button>
+  <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menú" type="button">☰</button>
+</header>
+<main id="inicio">
+  <section class="hero split" id="proyecto">
+    <div class="hero-copy">
+      <div class="eyebrow"><span></span> ATLAS HISTÓRICO DIGITAL · SIGLO XVII</div>
+      <h1>Territorios,<br><em>poder</em> y trayectorias.</h1>
+      <p class="lead">Una exploración cartográfica de los espacios territoriales, las redes de poder y las trayectorias de las élites locales en el espacio histórico de Charcas.</p>
+      <div class="hero-actions"><a class="button primary" href="#mapa">Explorar cartografía <span>→</span></a><a class="text-link" href="#proposito">Conocer el proyecto</a></div>
+      <div class="hero-meta"><span>INVESTIGACIÓN HISTÓRICA</span><span>·</span><span>CARTOGRAFÍA INTERACTIVA</span></div>
+    </div>
+    <div class="hero-art" aria-label="Composición cartográfica decorativa">
+      <div class="art-stamp">CHARCAS<br><small>SEISCENTOS</small></div>
+      <div class="art-lines"></div><div class="art-caption">Geografías históricas<br>y relaciones de poder</div>
+      <div class="art-coordinates">18° 00′ S<br>65° 00′ O</div>
+    </div>
+  </section>
+  <section class="map-section" id="mapa">
+    <div class="section-heading"><div><div class="eyebrow">01 / EXPLORACIÓN ESPACIAL</div><h2>El territorio como<br><em>fuente histórica.</em></h2></div><p>Activá las capas, explorá los polígonos y consultá sus fichas. Cada entidad puede vincularse con personas, acontecimientos y fuentes documentales.</p></div>
+    <div class="map-shell">
+      <aside class="map-sidebar" aria-label="Controles del mapa">
+        <div class="sidebar-head"><span class="eyebrow">CAPAS DE INFORMACIÓN</span><span class="live-dot"></span></div>
+        <div class="layer-control">
+          <label class="layer-title"><input id="territory-toggle" type="checkbox" checked><span class="swatch territory"></span><span><strong>Distribución territorial</strong><small>Jurisdicciones y territorios</small></span></label>
+          <label class="opacity-label" for="territory-opacity">Transparencia <output id="territory-value">72%</output></label><input id="territory-opacity" class="range" type="range" min="10" max="100" value="72">
+        </div>
+        <div class="layer-control">
+          <label class="layer-title"><input id="power-toggle" type="checkbox" checked><span class="swatch power"></span><span><strong>Distribución del poder</strong><small>Espacios y centros de poder</small></span></label>
+          <label class="opacity-label" for="power-opacity">Transparencia <output id="power-value">72%</output></label><input id="power-opacity" class="range" type="range" min="10" max="100" value="72">
+        </div>
+        <div class="sidebar-divider"></div>
+        <span class="eyebrow">CARTOGRAFÍA DE BASE</span>
+        <label class="select-label" for="basemap-select">Mapa de referencia</label>
+        <select id="basemap-select"><option value="paper">Contemporánea · papel claro</option><option value="osm">Contemporánea · OpenStreetMap</option><option value="historic">Histórica · configurar teselas</option></select>
+        <p id="historic-note" class="hint hidden">La cartografía histórica requiere una capa de teselas georreferenciadas o un servicio WMS. Se configura en <code>src/config.js</code>.</p>
+        <div class="sidebar-divider"></div>
+        <div class="legend"><span class="eyebrow">REFERENCIAS</span><div><i class="legend-box territory"></i> Territorios</div><div><i class="legend-box power"></i> Espacios de poder</div><div><i class="legend-outline"></i> Entidad seleccionada</div></div>
+        <button id="reset-map" class="subtle-button" type="button">↺ Restablecer vista</button>
+        <div class="map-note"><strong>Nota metodológica</strong><p>Las relaciones históricas se incorporan mediante documentación. La proximidad espacial, por sí sola, no demuestra una relación política o institucional.</p></div>
+      </aside>
+      <div class="map-main"><div id="map" role="application" aria-label="Mapa interactivo de territorios y espacios de poder"></div><div class="map-top-label"><span class="map-kicker">ESPACIO DE CHARCAS</span><span class="map-period">SIGLO XVII</span></div><div id="map-status" class="map-status">Cargando cartografía…</div></div>
+    </div>
+    <div class="map-footnote"><span>DATOS GEOGRÁFICOS · WGS 84 / EPSG:4326</span><span>Seleccioná un polígono para consultar su ficha</span></div>
+  </section>
+  <section class="project-section" id="proposito"><div class="eyebrow">02 / PROPÓSITO</div><div class="project-grid"><h2>Leer el poder<br>en clave <em>territorial.</em></h2><div><p>Este espacio propone articular la geografía histórica con el estudio de las élites locales. El mapa funciona como puerta de entrada a una base documental que permite reconocer actores, instituciones, acontecimientos y vínculos.</p><p>La información se organiza para distinguir lo que muestran las fuentes, las interpretaciones historiográficas y las relaciones documentadas entre entidades.</p></div></div><div class="principles"><div><b>01</b><strong>Territorio</strong><span>Distribuciones y jurisdicciones históricas.</span></div><div><b>02</b><strong>Actores</strong><span>Personas, cargos y trayectorias políticas.</span></div><div><b>03</b><strong>Documentos</strong><span>Fuentes y referencias asociadas a cada registro.</span></div></div></section>
+  <section class="sources-section" id="quien-soy"><div><div class="eyebrow">03 / DIRECCIÓN DEL PROYECTO</div><h2>Quién soy.</h2></div><p>Este espacio está destinado a presentar a la persona responsable de la investigación, su trayectoria académica y los objetivos que orientan el proyecto. El texto biográfico se incorporará con información proporcionada por su autor.</p></section>
+  <section class="sources-section" id="fuentes"><div><div class="eyebrow">04 / DOCUMENTACIÓN</div><h2>La fuente, siempre<br><em>a la vista.</em></h2></div><p>Las fichas podrán incorporar referencias bibliográficas y documentales generales, además de fuentes vinculadas a cada territorio, espacio de poder, persona o acontecimiento. Las relaciones se mostrarán con su fundamento documental.</p></section>
+</main>
+<footer id="contacto"><div class="footer-brand"><span class="brand-mark">EL</span><div><strong>Élites locales y trayectorias políticas</strong><small>Atlas histórico digital · Siglo XVII</small></div></div><div class="footer-note">Proyecto de investigación histórica.<br>Contenido en desarrollo.</div><a href="mailto:contacto@ejemplo.org" class="footer-contact">Contacto <span>↗</span></a></footer>
+
+<div id="detail-panel" class="detail-panel" aria-hidden="true"><div class="detail-top"><span class="eyebrow" id="detail-type">FICHA HISTÓRICA</span><button id="detail-close" class="icon-button" aria-label="Cerrar ficha">×</button></div><div id="detail-content" class="detail-content"><p class="empty-state">Seleccioná una entidad del mapa para consultar su información.</p></div></div>
+<div id="admin-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="admin-title"><div class="modal-backdrop" data-close="true"></div><div class="modal-card"><div class="modal-head"><div><div class="eyebrow">ÁREA RESTRINGIDA</div><h2 id="admin-title">Administración</h2></div><button class="icon-button" id="admin-close" aria-label="Cerrar">×</button></div><div id="admin-auth"><p class="muted">Ingresá con tu cuenta autorizada para administrar fichas, personas, acontecimientos, fuentes y relaciones.</p><form id="login-form" class="stack-form"><label>Correo electrónico<input id="login-email" type="email" autocomplete="username" required></label><label>Contraseña<input id="login-password" type="password" autocomplete="current-password" required></label><button class="button primary" type="submit">Ingresar</button><p id="login-message" class="form-message" aria-live="polite"></p></form><p class="hint">El alta de usuarios y la asignación de permisos se realizan desde Supabase. No hay credenciales predeterminadas.</p></div><div id="admin-workspace" class="hidden"><div class="admin-toolbar"><span id="admin-user" class="muted"></span><button id="logout-button" class="subtle-button" type="button">Cerrar sesión</button></div><div class="admin-tabs"><button class="admin-tab active" data-tab="fichas">Fichas</button><button class="admin-tab" data-tab="personas">Personas</button><button class="admin-tab" data-tab="eventos">Acontecimientos</button><button class="admin-tab" data-tab="cargos">Cargos</button><button class="admin-tab" data-tab="fuentes">Fuentes</button><button class="admin-tab" data-tab="relaciones">Relaciones</button></div><div id="admin-panel"></div></div></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module" src="./src/app.js"></script>
+</body></html>
