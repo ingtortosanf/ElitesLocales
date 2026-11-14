@@ -27,7 +27,8 @@ const territoryColor = new Map();
 const patternSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
 patternSvg.setAttribute('width','0'); patternSvg.setAttribute('height','0'); patternSvg.setAttribute('aria-hidden','true');
 patternSvg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-patternSvg.innerHTML = '<defs><pattern id="power-hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#f2d33a"/><rect width="6" height="12" fill="#5aa05a"/></pattern></defs>';
+patternSvg.innerHTML = '<defs><pattern id="hatch-green" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#3f9a4a"/></pattern><pattern id="hatch-yellow" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#f5d000"/></pattern></defs>';
+const powerFills = { 'POD-0001': 'url(#hatch-green)', 'POD-0002': 'url(#hatch-yellow)', 'POD-0003': 'url(#hatch-yellow)' };
 document.body.appendChild(patternSvg);
 function pastelFor(id) {
   if (!territoryColor.has(id)) territoryColor.set(id, territoryPalette[territoryColor.size % territoryPalette.length]);
@@ -43,7 +44,7 @@ function styleFeature(feature, type) {
     color: selected ? '#a65f43' : (isTer ? '#000000' : '#8a8a8a'),
     weight: selected ? 4 : (isTer ? 2 : 1.5),
     opacity: 1,
-    fillColor: isTer ? pastelFor(id) : 'url(#power-hatch)',
+    fillColor: isTer ? pastelFor(id) : (powerFills[id] || 'url(#hatch-yellow)'),
     fillOpacity: selected ? Math.min(1, slider * .8 + .15) : slider * .8
   };
 }
