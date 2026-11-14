@@ -21,10 +21,26 @@ const colors = { territorio: '#71816e', poder: '#b76d4d' };
 function esc(value='') { return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function featureName(p) { return p.display_name || p.Nombre || p.Nombre_poder || p.id_territorio || p.id_poder || 'Entidad sin denominación'; }
 function featureId(p) { return p.entity_id || p.id_territorio || p.id_poder || ''; }
+const territoryPalette = ['#b8d8e8','#f7d6a8','#c9e4c5','#e6c9e8','#fbe7a1','#f4c6cf','#c8d6f0','#d4e8d0','#fcd5bd','#d9cfee'];
+const territoryColor = new Map();
+const powerColors = { 'POD-0001': '#9fcdf2', 'POD-0002': '#dc143c' };
+function pastelFor(id) {
+  if (!territoryColor.has(id)) territoryColor.set(id, territoryPalette[territoryColor.size % territoryPalette.length]);
+  return territoryColor.get(id);
+}
 function styleFeature(feature, type) {
   const p = feature.properties || {};
-  const selected = selectedFeature && featureId(selectedFeature.properties) === featureId(p);
-  return { color: selected ? '#a65f43' : (type === 'territorio' ? '#536b55' : '#8d4c36'), weight: selected ? 3 : 1.15, opacity: .95, fillColor: colors[type], fillOpacity: selected ? .65 : (type === 'territorio' ? Number($('territory-opacity').value)/100 : Number($('power-opacity').value)/100) * .55 };
+  const id = featureId(p);
+  const selected = selectedFeature && featureId(selectedFeature.properties) === id;
+  const isTer = type === 'territorio';
+  const slider = Number($(isTer ? 'territory-opacity' : 'power-opacity').value) / 100;
+  return {
+    color: selected ? '#a65f43' : (isTer ? '#8a8a8a' : '#000000'),
+    weight: selected ? (isTer ? 3.5 : 5) : (isTer ? 1.5 : 3.5),
+    opacity: 1,
+    fillColor: isTer ? pastelFor(id) : (powerColors[id] || colors.poder),
+    fillOpacity: selected ? Math.min(1, slider * .8 + .15) : slider * .8
+  };
 }
 function bindFeature(feature, layer, type) {
   const p = feature.properties || {};
