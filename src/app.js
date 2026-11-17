@@ -197,7 +197,7 @@ $('menu-toggle').addEventListener('click',()=>$('main-nav')?.classList.toggle('o
 const adminModal=$('admin-modal');
 function showAdmin(){adminModal.classList.remove('hidden');document.body.style.overflow='hidden';}
 function hideAdmin(){adminModal.classList.add('hidden');document.body.style.overflow='';}
-$('admin-open').addEventListener('click',showAdmin); $('admin-close').addEventListener('click',hideAdmin);
+$('admin-open')?.addEventListener('click',showAdmin); $('admin-close').addEventListener('click',hideAdmin);
 adminModal.addEventListener('click',e=>{if(e.target.dataset.close)hideAdmin();});
 function authState(s){session=s;$('admin-auth').classList.toggle('hidden',!!s);$('admin-workspace').classList.toggle('hidden',!s);if(s){$('admin-user').textContent=s.user.email||'Sesión autenticada';renderAdminTab(activeAdminTab);}}
 if(db){db.auth.getSession().then(({data})=>authState(data.session));db.auth.onAuthStateChange((_event,s)=>authState(s));}
