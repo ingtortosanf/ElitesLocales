@@ -25,7 +25,7 @@ Object.values(LAYER_PANE).forEach((name, i) => { map.createPane(name).style.zInd
 // Capa de puntos: el ícono depende del campo "tipoid" de cada punto.
 const POINT_TYPES = {
   capital: { label: 'Capital',           color: '#d4a017', glyph: '<polygon points="12,3 14.6,9 21,9.5 16,13.8 17.6,20 12,16.6 6.4,20 8,13.8 3,9.5 9.4,9"/>' },
-  ciudad:  { label: 'Ciudad',            color: '#1f2a30', glyph: '<path d="M3 11 12 3l9 8v10H3z"/>' },
+  ciudad:  { label: 'Ciudad / pueblo',            color: '#1f2a30', glyph: '<path d="M3 11 12 3l9 8v10H3z"/>' },
   mineria: { label: 'Lugar de minería',  color: '#7b4fa3', glyph: '<path d="M4 10c4-6 12-6 16 0" fill="none" stroke-width="2.4"/><path d="M12 6v15" fill="none" stroke-width="2.4"/>' },
   otro:    { label: 'Otro',              color: '#6f716b', glyph: '<circle cx="12" cy="12" r="4"/>' }
 };
