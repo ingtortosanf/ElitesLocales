@@ -7,59 +7,103 @@ const db = hasSupabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG
 const map = L.map('map', { zoomControl: false, scrollWheelZoom: true }).setView([-21.5, -65.2], 5);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community', maxZoom: 19 }).addTo(map);
-let territoryLayer = null;
-let powerLayer = null;
 let selectedLayer = null;
 let selectedFeature = null;
-let territoryFeatures = [];
-let powerFeatures = [];
+const layers = {};   // clave de capa -> L.geoJSON
+const layerCounts = {};
+// Cada capa tiene sus propios controles en la barra lateral.
+const LAYER_UI = {
+  territorio:  { toggle: 'territory-toggle', slider: 'territory-opacity', output: 'territory-value' },
+  gobernacion: { toggle: 'gob-toggle',       slider: 'gob-opacity',       output: 'gob-value' },
+  audiencia:   { toggle: 'aud-toggle',       slider: 'aud-opacity',       output: 'aud-value' },
+  puntos:      { toggle: 'points-toggle',    slider: 'points-opacity',    output: 'points-value' }
+};
+// Colores de las capas de polígonos y orden de apilado (el territorio queda debajo).
+const LAYER_COLORS = { audiencia: '#2f6fb0', gobernacion: '#3f9a4a' };
+const LAYER_PANE = { territorio: 'pane-territorio', audiencia: 'pane-audiencia', gobernacion: 'pane-gobernacion' };
+Object.values(LAYER_PANE).forEach((name, i) => { map.createPane(name).style.zIndex = 410 + i * 5; });
+// Capa de puntos: el ícono depende del campo "tipoid" de cada punto.
+const POINT_TYPES = {
+  capital: { label: 'Capital',           color: '#d4a017', glyph: '<polygon points="12,3 14.6,9 21,9.5 16,13.8 17.6,20 12,16.6 6.4,20 8,13.8 3,9.5 9.4,9"/>' },
+  ciudad:  { label: 'Ciudad',            color: '#1f2a30', glyph: '<path d="M3 11 12 3l9 8v10H3z"/>' },
+  mineria: { label: 'Lugar de minería',  color: '#7b4fa3', glyph: '<path d="M4 10c4-6 12-6 16 0" fill="none" stroke-width="2.4"/><path d="M12 6v15" fill="none" stroke-width="2.4"/>' },
+  otro:    { label: 'Otro',              color: '#6f716b', glyph: '<circle cx="12" cy="12" r="4"/>' }
+};
+const norm = (v='') => String(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+function pointCategory(p) {
+  const key = Object.keys(p).find(k => norm(k).replace(/[_\s]/g, '') === 'tipoid');
+  const v = norm(key ? p[key] : (p.categoria || ''));
+  if (POINT_TYPES[v]) return v;
+  if (v.startsWith('capital')) return 'capital';
+  if (v.startsWith('miner') || v.startsWith('mina') || v.startsWith('asiento')) return 'mineria';
+  if (/^(ciudad|subciudad|villa|pueblo)/.test(v)) return 'ciudad';
+  return 'otro';
+}
+const LAYER_LABEL = { territorio: 'Distribución territorial', audiencia: 'Real Audiencia', gobernacion: 'Gobernación del Tucumán', puntos: 'Lugar' };
+const TYPE_LABEL = { territorio: 'Territorio', poder: 'Espacio de poder', punto: 'Lugar (punto)' };
+const FICHA_LABEL = { territorio: 'FICHA · TERRITORIO', poder: 'FICHA · ESPACIO DE PODER', punto: 'FICHA · LUGAR' };
+const isSelected = (f) => Boolean(selectedFeature) && featureId(selectedFeature.properties) === featureId(f.properties || {});
+function pointIcon(feature, selected = false) {
+  const t = POINT_TYPES[pointCategory(feature.properties || {})];
+  return L.divIcon({ className: 'pt-marker', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15],
+    html: `<div class="pt-badge${selected ? ' selected' : ''}" style="background:${t.color}"><svg viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${t.glyph}</svg></div>` });
+}
 let session = null;
 let activeAdminTab = 'fichas';
 const featureIndex = new Map();
 const colors = { territorio: '#71816e', poder: '#b76d4d' };
 
 function esc(value='') { return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function featureName(p) { return p.display_name || p.Nombre || p.Nombre_poder || p.id_territorio || p.id_poder || 'Entidad sin denominación'; }
-function featureId(p) { return p.entity_id || p.id_territorio || p.id_poder || ''; }
-const territoryPalette = ['#b8d8e8','#f7d6a8','#c9e4c5','#e6c9e8','#fbe7a1','#f4c6cf','#c8d6f0','#d4e8d0','#fcd5bd','#d9cfee'];
+function featureName(p) { return p.display_name || p.Nombre || p.Nombre_poder || p.nombre || p.id_territorio || p.id_poder || p.id_punto || 'Entidad sin denominación'; }
+function featureId(p) { return p.entity_id || p.id_territorio || p.id_poder || p.id_punto || ''; }
+const territoryPalette = ['#fee0d2','#fcbba1','#fc9272','#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d'];
 const territoryColor = new Map();
-// Patrón diagonal verde y amarillo para la capa de espacios de poder
-const patternSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-patternSvg.setAttribute('width','0'); patternSvg.setAttribute('height','0'); patternSvg.setAttribute('aria-hidden','true');
-patternSvg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-patternSvg.innerHTML = '<defs><pattern id="hatch-green" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#3f9a4a"/></pattern><pattern id="hatch-yellow" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#f5d000"/></pattern></defs>';
-const powerFills = { 'POD-0001': 'url(#hatch-green)', 'POD-0002': 'url(#hatch-yellow)', 'POD-0003': 'url(#hatch-yellow)' };
-document.body.appendChild(patternSvg);
+
 function pastelFor(id) {
   if (!territoryColor.has(id)) territoryColor.set(id, territoryPalette[territoryColor.size % territoryPalette.length]);
   return territoryColor.get(id);
 }
-function styleFeature(feature, type) {
+function styleFeature(feature) {
   const p = feature.properties || {};
   const id = featureId(p);
-  const selected = selectedFeature && featureId(selectedFeature.properties) === id;
-  const isTer = type === 'territorio';
-  const slider = Number($(isTer ? 'territory-opacity' : 'power-opacity').value) / 100;
+  const key = p.layer_key;
+  const selected = isSelected(feature);
+  const slider = Number($(LAYER_UI[key].slider).value) / 100;
+  const isTer = key === 'territorio';
   return {
-    color: selected ? '#a65f43' : (isTer ? '#000000' : '#8a8a8a'),
-    weight: selected ? 4 : (isTer ? 2 : 1.5),
+    pane: LAYER_PANE[key],
+    color: selected ? '#a65f43' : (isTer ? '#2a0a08' : '#ffffff'),
+    weight: selected ? 4 : (isTer ? 1.5 : 2),
     opacity: 1,
-    fillColor: isTer ? pastelFor(id) : (powerFills[id] || 'url(#hatch-yellow)'),
+    fillColor: isTer ? pastelFor(id) : LAYER_COLORS[key],
     fillOpacity: selected ? Math.min(1, slider * .8 + .15) : slider * .8
   };
 }
+function restyle(layer, feature) {
+  if (!layer || !feature) return;
+  if (feature.properties.layer_key === 'puntos') layer.setIcon(pointIcon(feature, isSelected(feature)));
+  else if (layer.setStyle) layer.setStyle(styleFeature(feature));
+}
 function bindFeature(feature, layer, type) {
   const p = feature.properties || {};
-  layer.bindPopup(`<div class="popup-type">${type === 'territorio' ? 'Distribución territorial' : 'Espacio de poder'}</div><div class="popup-title">${esc(featureName(p))}</div><div>${esc(featureId(p))}</div><button class="popup-open" data-feature-id="${esc(featureId(p))}" data-feature-type="${type}">VER FICHA →</button>`);
+  const label = p.layer_key === 'puntos' ? POINT_TYPES[pointCategory(p)].label : LAYER_LABEL[p.layer_key];
+  layer.bindPopup(`<div class="popup-type">${esc(label)}</div><div class="popup-title">${esc(featureName(p))}</div><div>${esc(featureId(p))}</div><button class="popup-open" data-feature-id="${esc(featureId(p))}" data-feature-type="${type}">VER FICHA →</button>`);
   layer.on('click', () => selectFeature(feature, layer, type));
 }
 function selectFeature(feature, layer, type) {
-  if (selectedLayer && selectedLayer.setStyle) selectedLayer.setStyle(styleFeature(selectedFeature, selectedFeature.properties.entity_type));
+  const previous = selectedLayer, previousFeature = selectedFeature;
   selectedFeature = feature; selectedLayer = layer;
-  if (layer?.setStyle) layer.setStyle(styleFeature(feature, type));
+  restyle(previous, previousFeature);
+  restyle(layer, feature);
   renderDetail(feature, type);
 }
-function setLayerOpacity(layer, type) { if (layer) layer.setStyle(f => styleFeature(f, type)); }
+function setLayerOpacity(layer, key) {
+  if (!layer) return;
+  if (key === 'puntos') {
+    const o = Math.max(.25, Number($(LAYER_UI.puntos.slider).value) / 100);
+    layer.eachLayer(m => { m.setIcon(pointIcon(m.feature, isSelected(m.feature))); m.setOpacity(o); });
+  } else layer.setStyle(f => styleFeature(f));
+}
 function openDetail() { $('detail-panel').classList.add('open'); $('detail-panel').setAttribute('aria-hidden','false'); }
 function closeDetail() { $('detail-panel').classList.remove('open'); $('detail-panel').setAttribute('aria-hidden','true'); }
 
@@ -80,12 +124,12 @@ async function renderDetail(feature, type) {
   const p = feature.properties || {};
   const id = featureId(p);
   const local = FICHAS[id];
-  $('detail-type').textContent = type === 'territorio' ? 'FICHA · TERRITORIO' : 'FICHA · ESPACIO DE PODER';
+  $('detail-type').textContent = FICHA_LABEL[type] || 'FICHA HISTÓRICA';
   $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(local?.name || featureName(p))}</h3><div class="detail-period">${esc(local?.period || 'Espacio histórico de Charcas · Siglo XVII')}</div><p class="empty-state">${db ? 'Consultando ficha documental…' : 'La geometría está disponible. La ficha documental se completará cuando se configure la base de datos.'}</p>`;
   openDetail();
   const entity = await getEntityDetail(id, type);
   if (!entity) {
-    $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(local?.name || featureName(p))}</h3><div class="detail-period">${esc(local?.period || 'Espacio histórico de Charcas · Siglo XVII')}</div><h4>Descripción histórica</h4>${local ? `<div class="ficha-body">${fichaHtml(local.description)}</div>` : `<p>${db ? 'Todavía no se ha publicado una ficha documental para esta entidad.' : 'Esta entidad procede de la capa geográfica. Para mostrar descripciones, personajes, acontecimientos y fuentes, conectá el proyecto con Supabase y cargá su ficha desde Administración.'}</p>`}<h4>Identificación cartográfica</h4><p>Identificador: ${esc(id)}<br>Tipo: ${type === 'territorio' ? 'Territorio' : 'Espacio de poder'}${p.Titulo ? `<br>Categoría: ${esc(p.Titulo)}` : ''}</p>`;
+    $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(local?.name || featureName(p))}</h3><div class="detail-period">${esc(local?.period || 'Espacio histórico de Charcas · Siglo XVII')}</div><h4>Descripción histórica</h4>${local ? `<div class="ficha-body">${fichaHtml(local.description)}</div>` : `<p>${db ? 'Todavía no se ha publicado una ficha documental para esta entidad.' : 'Esta entidad procede de la capa geográfica. Para mostrar descripciones, personajes, acontecimientos y fuentes, conectá el proyecto con Supabase y cargá su ficha desde Administración.'}</p>`}<h4>Identificación cartográfica</h4><p>Identificador: ${esc(id)}<br>Tipo: ${TYPE_LABEL[type] || type}${p.Titulo ? `<br>Categoría: ${esc(p.Titulo)}` : ''}</p>`;
     return;
   }
   const [people, events, sources, relations] = await Promise.all([
@@ -98,31 +142,48 @@ async function renderDetail(feature, type) {
   $('detail-content').innerHTML = `<div class="entity-id">${esc(id)}</div><h3>${esc(entity.name || local?.name || featureName(p))}</h3><div class="detail-period">${esc(entity.period || local?.period || 'Siglo XVII')}</div><h4>Descripción histórica</h4><div class="ficha-body">${fichaHtml(entity.description || local?.description || 'Sin descripción incorporada.')}</div><h4>Personas vinculadas</h4>${list(people,x=>`<li><strong>${esc(x.people?.full_name || 'Persona')}</strong>${x.people?.biography?`<br>${esc(x.people.biography)}`:''}${x.people?.person_offices?.length?`<br><em>Trayectoria:</em> ${x.people.person_offices.map(po=>esc(po.offices?.name||'Cargo')+(po.institution_context?' · '+esc(po.institution_context):'')+(po.start_date?' ('+esc(po.start_date):'')+(po.end_date?'–'+esc(po.end_date)+')':po.start_date?')':'')).join('; ')}`:''}</li>`)}<h4>Acontecimientos</h4>${list(events,x=>`<li><strong>${esc(x.events?.title || 'Acontecimiento')}</strong>${x.events?.event_date?` · ${esc(x.events.event_date)}`:''}${x.events?.description?`<br>${esc(x.events.description)}`:''}</li>`)}<h4>Fuentes documentales</h4>${list(sources,x=>`<li>${x.sources?.url?`<a href="${esc(x.sources.url)}" target="_blank" rel="noopener">${esc(x.sources.citation || 'Consultar fuente')}</a>`:esc(x.sources?.citation || 'Fuente')}</li>`)}<h4>Relaciones documentadas</h4>${list(relations,x=>`<li><strong>${esc(x.relation_type)}</strong>${x.target_geo_id?` · ${esc(x.target_geo_id)}`:''}${x.description?`<br>${esc(x.description)}`:''}</li>`)}`;
 }
 
-async function loadGeoJSON(path, type) {
+async function fetchGeoJSON(path) {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`No se pudo cargar ${path} (${response.status})`);
-  const data = await response.json();
-  data.features.forEach(f => { f.properties.entity_type = type; featureIndex.set(featureId(f.properties), f); });
-  const layer = L.geoJSON(data, { style: f => styleFeature(f,type), onEachFeature: (f,l) => bindFeature(f,l,type) });
-  layer.addTo(map);
-  return { layer, features: data.features };
+  return response.json();
+}
+function buildLayer(features, layerKey, type) {
+  features.forEach(f => { f.properties = f.properties || {}; f.properties.entity_type = type; f.properties.layer_key = layerKey; featureIndex.set(featureId(f.properties), f); });
+  const options = { style: f => styleFeature(f), onEachFeature: (f,l) => bindFeature(f,l,type) };
+  if (layerKey === 'puntos') options.pointToLayer = (f, latlng) => L.marker(latlng, { icon: pointIcon(f), keyboard: true, title: featureName(f.properties) });
+  const layer = L.geoJSON({ type: 'FeatureCollection', features }, options).addTo(map);
+  layers[layerKey] = layer; layerCounts[layerKey] = features.length;
+  return layer;
 }
 function refreshLayers() {
-  if (territoryLayer) { if ($('territory-toggle').checked && !map.hasLayer(territoryLayer)) territoryLayer.addTo(map); if (!$('territory-toggle').checked && map.hasLayer(territoryLayer)) map.removeLayer(territoryLayer); setLayerOpacity(territoryLayer,'territorio'); }
-  if (powerLayer) { if ($('power-toggle').checked && !map.hasLayer(powerLayer)) powerLayer.addTo(map); if (!$('power-toggle').checked && map.hasLayer(powerLayer)) map.removeLayer(powerLayer); setLayerOpacity(powerLayer,'poder'); }
+  Object.entries(layers).forEach(([key, layer]) => {
+    const on = $(LAYER_UI[key].toggle).checked;
+    if (on && !map.hasLayer(layer)) layer.addTo(map);
+    if (!on && map.hasLayer(layer)) map.removeLayer(layer);
+    setLayerOpacity(layer, key);
+  });
 }
 async function initMap() {
   try {
-    const [t,p] = await Promise.all([loadGeoJSON('./public/data/territorios.geojson','territorio'),loadGeoJSON('./public/data/espacios_poder.geojson','poder')]);
-    territoryLayer=t.layer; territoryFeatures=t.features; powerLayer=p.layer; powerFeatures=p.features;
+    const [t, au, go] = await Promise.all([
+      fetchGeoJSON('./public/data/territorios.geojson'),
+      fetchGeoJSON('./public/data/real_audiencia.geojson'),
+      fetchGeoJSON('./public/data/tucuman.geojson')
+    ]);
+    buildLayer(t.features, 'territorio', 'territorio');
+    buildLayer(au.features, 'audiencia', 'poder');
+    buildLayer(go.features, 'gobernacion', 'poder');
+    // La capa de puntos es opcional: si el archivo todavía no existe, el resto del mapa funciona igual.
+    try { const pt = await fetchGeoJSON('./public/data/puntos.geojson'); buildLayer(pt.features, 'puntos', 'punto'); } catch (e) { console.warn(e); layerCounts.puntos = 0; }
     refreshLayers();
-    $('map-status').textContent = `${territoryFeatures.length} territorios · ${powerFeatures.length} espacios de poder`;
+    $('map-status').textContent = `${layerCounts.territorio} territorios · ${layerCounts.gobernacion + layerCounts.audiencia} espacios de poder · ${layerCounts.puntos || 0} puntos`;
   } catch (e) { console.error(e); $('map-status').textContent = 'No se pudieron cargar los datos. Revisá la carpeta public/data.'; }
 }
 
-$('territory-toggle').addEventListener('change',refreshLayers); $('power-toggle').addEventListener('change',refreshLayers);
-$('territory-opacity').addEventListener('input',e=>{ $('territory-value').value=`${e.target.value}%`; setLayerOpacity(territoryLayer,'territorio'); });
-$('power-opacity').addEventListener('input',e=>{ $('power-value').value=`${e.target.value}%`; setLayerOpacity(powerLayer,'poder'); });
+Object.entries(LAYER_UI).forEach(([key, ui]) => {
+  $(ui.toggle).addEventListener('change', refreshLayers);
+  $(ui.slider).addEventListener('input', e => { $(ui.output).value = `${e.target.value}%`; setLayerOpacity(layers[key], key); });
+});
 $('reset-map').addEventListener('click',()=>map.setView([-21.5,-65.2],5));
 $('detail-close').addEventListener('click',closeDetail);
 $('map').addEventListener('click',e=>{const b=e.target.closest('.popup-open'); if(!b)return; const f=featureIndex.get(b.dataset.featureId); if(f) renderDetail(f,b.dataset.featureType);});
