@@ -1,15 +1,33 @@
 {
-  "type": "FeatureCollection",
-  "name": "puntos",
-  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-  "features": [
-    { "type": "Feature", "properties": { "id_punto": "PUN-0001", "Nombre": "La Plata (Chuquisaca)", "tipoid": "capital" }, "geometry": { "type": "Point", "coordinates": [-65.2595, -19.0196] } },
-    { "type": "Feature", "properties": { "id_punto": "PUN-0002", "Nombre": "Santiago del Estero", "tipoid": "capital" }, "geometry": { "type": "Point", "coordinates": [-64.2667, -27.7951] } },
-    { "type": "Feature", "properties": { "id_punto": "PUN-0003", "Nombre": "Córdoba", "tipoid": "capital" }, "geometry": { "type": "Point", "coordinates": [-64.1888, -31.4201] } },
-    { "type": "Feature", "properties": { "id_punto": "PUN-0004", "Nombre": "San Salvador de Velasco (Jujuy)", "tipoid": "ciudad" }, "geometry": { "type": "Point", "coordinates": [-65.2971, -24.1858] } },
-    { "type": "Feature", "properties": { "id_punto": "PUN-0005", "Nombre": "Salta", "tipoid": "ciudad" }, "geometry": { "type": "Point", "coordinates": [-65.4117, -24.7821] } },
-    { "type": "Feature", "properties": { "id_punto": "PUN-0006", "Nombre": "Tarija", "tipoid": "ciudad" }, "geometry": { "type": "Point", "coordinates": [-64.7296, -21.5355] } },
-    { "type": "Feature", "properties": { "id_punto": "PUN-0007", "Nombre": "Villa Imperial de Potosí (Cerro Rico)", "tipoid": "mineria" }, "geometry": { "type": "Point", "coordinates": [-65.7533, -19.5836] } },
-    { "type": "Feature", "properties": { "id_punto": "PUN-0008", "Nombre": "Porco", "tipoid": "mineria" }, "geometry": { "type": "Point", "coordinates": [-65.9667, -19.8333] } }
-  ]
+"type": "FeatureCollection",
+"name": "puntos",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Santiago del Estero","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3672577.115308295935392,6925980.548049116507173]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Catamarca","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3531790.168156646192074,6849426.006953620351851]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Cordoba","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3678607.096284995321184,6522496.168782101944089]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"San Miguel De Tucuman","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3614636.863314786925912,7037666.282661040313542]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Salta","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3564299.630813638679683,7246880.405243935063481]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Jujuy","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3571265.916755801998079,7325911.831372385844588]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Tarija","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3631719.901628314051777,7620690.18621377274394]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Potosi","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3519205.860031359363347,7835458.983187044970691]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"La Plata","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3592876.497181476093829,7897856.177641591057181]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Santa Cruz","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3797109.3311314471066,8052800.471434188075364]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"La Paz","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3290590.9290886442177,8202763.47659385856241]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Buenos Aires","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[4200968.45452699624002,6135829.422078096307814]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Omaguaca","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3558927.762979495804757,7430068.265372253954411]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Casabindo","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3500576.601393399760127,7458368.110345802269876]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Cochinoca","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3513347.023031522519886,7479551.872039961628616]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Rinconada","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3474407.243684820830822,7504327.609157833270729]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Yavi","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3553012.542136949487031,7530955.929691260680556]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Sococha","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3549171.912708610761911,7563386.960231988690794]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Talina","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3513880.588696909602731,7582314.178260649554431]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Opioca","tipoid":"Pueblo"},"geometry":{"type":"Point","coordinates":[3506590.283210417721421,7648102.003612704575062]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Tupiza","tipoid":"Capital"},"geometry":{"type":"Point","coordinates":[3526017.488823156338185,7627744.243400795385242]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"San Antonio del Nuevo Mundo","tipoid":"Mina"},"geometry":{"type":"Point","coordinates":[3386467.356021910905838,7561465.372205265797675]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Esmoruco","tipoid":"Mina"},"geometry":{"type":"Point","coordinates":[3433102.198755109217018,7557070.984634136781096]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Esmaraca","tipoid":"Mina"},"geometry":{"type":"Point","coordinates":[3478859.256307135336101,7595759.873034283518791]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Estarca","tipoid":"Mina"},"geometry":{"type":"Point","coordinates":[3508153.074682037346065,7597042.965308814309537]}},
+{"type":"Feature","properties":{"id":null,"Ciudadees":"Chocaya","tipoid":"Mina"},"geometry":{"type":"Point","coordinates":[3461275.822955096140504,7665429.827290222048759]}}
+]
 }
