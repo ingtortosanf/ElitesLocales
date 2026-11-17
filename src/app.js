@@ -44,9 +44,13 @@ const TYPE_LABEL = { territorio: 'Territorio', poder: 'Espacio de poder', punto:
 const FICHA_LABEL = { territorio: 'FICHA · TERRITORIO', poder: 'FICHA · ESPACIO DE PODER', punto: 'FICHA · LUGAR' };
 const isSelected = (f) => Boolean(selectedFeature) && featureId(selectedFeature.properties) === featureId(f.properties || {});
 function pointIcon(feature, selected = false) {
-  const t = POINT_TYPES[pointCategory(feature.properties || {})];
-  return L.divIcon({ className: 'pt-marker', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15],
-    html: `<div class="pt-badge${selected ? ' selected' : ''}" style="background:${t.color}"><svg viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${t.glyph}</svg></div>` });
+  const p = feature.properties || {};
+  const cat = pointCategory(p);
+  const t = POINT_TYPES[cat];
+  // Solo las capitales llevan etiqueta con el nombre.
+  const label = cat === 'capital' ? `<span class="pt-label">${esc(featureName(p))}</span>` : '';
+  return L.divIcon({ className: 'pt-marker', iconSize: [15, 15], iconAnchor: [7.5, 7.5], popupAnchor: [0, -8],
+    html: `<div class="pt-badge${selected ? ' selected' : ''}" style="background:${t.color}"><svg viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${t.glyph}</svg></div>${label}` });
 }
 let session = null;
 let activeAdminTab = 'fichas';
